@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogo de productos</title>
+</head>
+<body class="bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-10 mt-3 text-light fs-5">
+                <p class="h2 text-center">Registrar Producto</p>
+                <form class="" id="formulario-producto" action="">
+                    <input type="hidden" id="id"/>
+                    <div class="my-3">
+                        <label for="nombre">Producto: </label>
+                        <input id="nombre" type="text" class="form-control"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="precio">Precio: </label>
+                        <input id="precio" type="number" class="form-control"/>
+                    </div>
+                    <button class="btn btn-warning fs-5" type="submit">Guardar</button>
+                    <button class="btn btn-warning fs-5" type="reset" onclick="document.getElementById('id').value = 0">Limpiar</button>
+                </form>
+            </div>
+        </div>
+        <div class="row mt-5">
+            <div class="col">
+                <table class="table text-light">
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Producto</th>
+                            <th scope="col">Precio</th>
+                            <th scope="col">Acciones</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-productos">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+
+       let cargar =  () =>{
+            let url = "http://localhost:8081/productos";
+            fetch(url)
+                .then(res => res.json())
+                .catch( error => console.log("Error: ", error))
+                .then( response => {
+                    let tbody = document.getElementById("tbody-productos");
+                    tbody.innerHTML = "";
+                    //cargar datos en tbody
+                    for(producto of response){
+                        tbody.innerHTML += "<tr>"+
+                            "<td>"+producto.id+"</td>"+
+                            "<td>"+producto.nombre+"</td>"+
+                            "<td>"+producto.precio+"</td>"+
+                            "<td>"+
+                                '<button data-id="'+producto.id+'" class="producto-editar btn btn-warning me-2" href="#">Editar</button>'+    
+                                '<button data-id="'+producto.id+'" class="producto-eliminar btn btn-danger" href="#">Eliminar</button>'+  
+                            "</td>"+
+                            "</tr>";
+                    }
+                    //querySelectorAll devuelve un listado de botones con la clase producto-eliminar
+                    let botones = document.querySelectorAll("button.producto-eliminar");
+                    botones.forEach(btn => btn.addEventListener("click", (evento) =>{
+                        let botonEliminar = evento.currentTarget;
+                        let productoEliminar = botonEliminar.getAttribute("data-id");
+                        console.log(productoEliminar)
+                        let url = "http://localhost:8081/productos/"+productoEliminar;
+                        fetch(url, {
+                            method: "DELETE",
+                        }).then(res => cargar())
+                        .catch( error => console.error("Error:", error))
+                        ;
+                    }));
+
+                    let botonesEditar = document.querySelectorAll("button.producto-editar");
+                    botonesEditar.forEach(btn => btn.addEventListener("click", (evento) =>{
+                        let botonEditar = evento.currentTarget;
+                        let productoId = botonEditar.getAttribute("data-id");
+                        let url = "http://localhost:8081/productos/"+productoId;
+                        fetch(url)
+                        .then(res => res.json())
+                        .catch( error => console.error("Error:", error))
+                        .then(producto => {
+                            document.getElementById("id").value = producto.id;
+                            document.getElementById("nombre").value = producto.nombre;
+                            document.getElementById("precio").value = producto.precio;
+                        })
+                        ;
+                    }));
+
+
+
+                })
+        };
+        window.addEventListener("DOMContentLoaded",cargar);
+
+
+
+
+        //let inicia una variable
+        //()=>{} funcion flecha
+        let formProducto = 
+            document.getElementById("formulario-producto");
+            //configura una funcion para el evento submit del form
+            formProducto.addEventListener("submit", (evento) => {
+                //recupera los valores del formulario
+                let id = parseInt(document.getElementById("id").value);
+                let nombre = document.getElementById("nombre").value;
+                let precio = document.getElementById("precio").value;
+                //muestra por consola del browser
+                console.log(nombre);
+                console.log(precio);
+
+                //invoca el web service con valores por defecto******IMPORTANTE
+                let url = "http://localhost:8081/productos";
+                let metodo = "POST"
+                let datos = {
+                    nombre,
+                    precio 
+                }
+
+                //si es un numero Y es mayor a cero
+                if( !isNaN(id) && id > 0){
+                    //quiero editar
+                    url = "http://localhost:8081/productos/"+id;
+                    datos.id = id;
+                    metodo = "PUT";
+                }
+
+                fetch(url, {
+                    method: metodo,
+                    body: JSON.stringify(datos),
+                    headers: {'Content-Type': 'application/json'}
+                }).then(res => res.json())
+                .catch( error => console.error("Error:", error))
+                .then(response => cargar())
+                ;
+                
+                
+                
+                console.log("Producto creado");
+                
+
+
+                //previene el comportamiento normal del (submit form)
+                evento.preventDefault();
+                return false;
+            });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+</body>
+</html>
